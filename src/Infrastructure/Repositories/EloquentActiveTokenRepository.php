@@ -12,29 +12,31 @@ final class EloquentActiveTokenRepository implements ActiveTokenRepositoryInterf
     public function add(AccessToken $token): void
     {
         ActiveToken::create([
-            'jti' => $token->jti(),
-            'user_id' => $token->userId()->value(),
-            'expires_at' => $token->expiresAt(),
+            "jti"        => $token->jti(),
+            "user_id"    => $token->userId()->value(),
+            "expires_at" => $token->expiresAt(),
         ]);
     }
 
     public function removeByJti(string $jti): void
     {
-        ActiveToken::where('jti', $jti)->delete();
+        ActiveToken::where("jti", $jti)->delete();
     }
 
     public function removeAllForUser(UserId $userId): void
     {
-        ActiveToken::where('user_id', $userId->value())->delete();
+        ActiveToken::where("user_id", $userId->value())->delete();
     }
 
-    /**
-     * @return AccessToken[]
-     */
+    public function findAllActiveUserIds(): array
+    {
+        return ActiveToken::distinct()->pluck("user_id")->toArray();
+    }
+
+    /** @return AccessToken[] */
     public function lockAllForUser(UserId $userId): array
     {
-        // SEC-05: Atomic full session revocation via lockForUpdate
-        $models = ActiveToken::where('user_id', $userId->value())
+        $models = ActiveToken::where("user_id", $userId->value())
             ->lockForUpdate()
             ->get();
 

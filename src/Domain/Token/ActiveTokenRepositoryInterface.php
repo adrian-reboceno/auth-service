@@ -12,6 +12,9 @@ interface ActiveTokenRepositoryInterface
 
     public function removeAllForUser(UserId $userId): void;
 
+    /** @return string[] */
+    public function findAllActiveUserIds(): array;
+
     /**
      * Finds all active JTIs for a user and locks them FOR UPDATE.
      * Returns an array of AccessToken objects.

@@ -90,6 +90,34 @@ final class AuthController
         }
     }
 
+
+    public function securityRevokeUser(
+        Request $request,
+        RevokeUserSecurityCommandHandler $handler,
+        string $id
+    ): JsonResponse {
+        try {
+            $command = new RevokeUserSecurityCommand(new \Domain\User\UserId($id));
+            $handler->handle($command);
+            return response()->json(["message" => "security_revoked"]);
+        } catch (\DomainException $e) {
+            return response()->json(["error" => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
+    public function bulkSecurityRevoke(
+        Request $request,
+        \Application\Auth\BulkSecurityRevoke\BulkSecurityRevokeCommandHandler $handler
+    ): JsonResponse {
+        try {
+            $command = new \Application\Auth\BulkSecurityRevoke\BulkSecurityRevokeCommand();
+            $result = $handler->handle($command);
+            return response()->json(["message" => "bulk_security_revoked", "users_revoked" => $result["users_revoked"]]);
+        } catch (\DomainException $e) {
+            return response()->json(["error" => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
     public function me(Request $request): JsonResponse
     {
         return response()->json([
