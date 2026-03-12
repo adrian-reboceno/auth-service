@@ -1,0 +1,72 @@
+# ─────────────────────────────────────────────────────────────────────
+# Test suite override
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.testing.yml \
+#     run --rm test
+#
+# This file overrides the base compose for testing:
+#   - Uses pharmacy_auth_test DB (never touches pharmacy_auth)
+#   - CACHE_DRIVER=array  (no Redis dependency in unit/integration tests)
+#   - QUEUE_CONNECTION=sync
+#   - Runs: generate-test-keys → migrate → pest --coverage-html
+# ─────────────────────────────────────────────────────────────────────
+
+services:
+
+  # Override app so it doesn't boot the HTTP server during test runs
+  app:
+    command: ["true"]
+
+  # Second MySQL database for tests — same container, different schema
+  mysql:
+    environment:
+      MYSQL_DATABASE: pharmacy_auth          # keeps production DB intact
+      # pharmacy_auth_test is created by the test command below
+
+  # Dedicated test runner container
+  test:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: auth-test
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - test_keys:/var/www/tests/keys
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "true"
+      APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" # replaced by key:generate
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: pharmacy_auth_test
+      DB_USERNAME: auth_user
+      DB_PASSWORD: auth_pass
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      REDIS_HOST: redis
+      JWT_PRIVATE_KEY_PATH: /var/www/tests/keys/test-private.pem
+      JWT_PUBLIC_KEY_PATH: /var/www/tests/keys/test-public.pem
+      REFRESH_TOKEN_MODE: body
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - auth-net
+    command: >
+      sh -c "
+        echo '--- Creating test database ---' &&
+        mysql -h mysql -u auth_user -pauth_pass -e 'CREATE DATABASE IF NOT EXISTS pharmacy_auth_test;' &&
+        echo '--- Generating application key ---' &&
+        php artisan key:generate --env=testing --force &&
+        echo '--- Generating RSA test keys ---' &&
+        php artisan auth:generate-test-keys &&
+        echo '--- Running migrations ---' &&
+        php artisan migrate --env=testing --force &&
+        echo '--- Running test suite ---' &&
+        ./vendor/bin/pest --coverage-html coverage/ --colors=always
+      "
+
+volumes:
+  test_keys:
