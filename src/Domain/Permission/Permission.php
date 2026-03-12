@@ -45,6 +45,11 @@ final class Permission
         return $this->description;
     }
 
+
+    public function updateDescription(?string $description): void
+    {
+        $this->description = $description;
+    }
     public function pullDomainEvents(): array
     {
         $events = $this->domainEvents;
