@@ -72,6 +72,9 @@ Route::prefix('v1')->middleware(['api', SetLocale::class])->group(function () {
 
             // Permission registry — SEC-06: requires users:manage
             Route::get('/permissions', [PermissionController::class, 'index']);
+            Route::post('/permissions', [PermissionController::class, 'store']);
+            Route::get('/permissions/{id}', [PermissionController::class, 'show']);
+            Route::put('/permissions/{id}', [PermissionController::class, 'update']);
         });
     });
 });
