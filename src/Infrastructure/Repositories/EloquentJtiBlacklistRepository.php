@@ -17,7 +17,6 @@ final class EloquentJtiBlacklistRepository implements JtiBlacklistRepositoryInte
             'reason' => $reason,
             'expires_at' => $expiresAt,
             'created_at' => now(),
-            'updated_at' => now(),
         ]);
     }
 
