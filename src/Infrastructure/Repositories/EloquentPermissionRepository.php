@@ -35,6 +35,8 @@ final class EloquentPermissionRepository implements PermissionRepositoryInterfac
         }
 
         $model->name = $permission->name()->value();
+        $model->resource = $permission->name()->resource();
+        $model->action = $permission->name()->action();
         $model->description = $permission->description();
         $model->save();
 
