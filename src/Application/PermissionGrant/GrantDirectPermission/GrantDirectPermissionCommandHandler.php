@@ -45,7 +45,7 @@ final class GrantDirectPermissionCommandHandler
         }
 
         $grant = UserPermissionGrant::grant(
-            new UserPermissionGrantId((string) \Illuminate\Support\Str::uuid()),
+            new UserPermissionGrantId(0),
             $command->targetUserId,
             $command->permissionId,
             $command->expiresAt

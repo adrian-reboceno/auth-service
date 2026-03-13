@@ -114,6 +114,24 @@ final class UserController
         }
     }
 
+
+    public function listPermissions(
+        string $id,
+        \Application\Shared\PermissionResolver $resolver
+    ): JsonResponse {
+        try {
+            $userId = new UserId($id);
+            $user = app(\Domain\User\UserRepositoryInterface::class)->findById($userId);
+            if ($user === null) {
+                return response()->json(["error" => "user_not_found"], \Illuminate\Http\JsonResponse::HTTP_NOT_FOUND);
+            }
+            $permissions = $resolver->resolve($userId, $user->isActive());
+            return response()->json(["data" => $permissions]);
+        } catch (\DomainException|\InvalidArgumentException $e) {
+            return response()->json(["error" => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
     public function assignRole(
         string $id,
         Request $request,
