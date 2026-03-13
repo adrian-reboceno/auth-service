@@ -39,11 +39,37 @@ final class RoleController
                 'name' => $role->name()->value(),
                 'is_active' => $role->isActive(),
                 'is_system' => $role->isSystem(),
-                'permissions' => array_map(fn($p) => $p->value(), $role->permissionIds()),
+                'permissions' => $role->activePermissionNames(),
             ];
         });
 
         return response()->json(['data' => $data]);
+    }
+
+
+    public function show(string $id): JsonResponse
+    {
+        $role = $this->roles->findById(new RoleId($id));
+        if ($role === null) {
+            return response()->json(["error" => "role_not_found"], 404);
+        }
+        return response()->json([
+            "id"          => $role->id()->value(),
+            "name"        => $role->name()->value(),
+            "description" => $role->description(),
+            "is_active"   => $role->isActive(),
+            "is_system"   => $role->isSystem(),
+            "permissions" => $role->activePermissionNames(),
+        ]);
+    }
+
+    public function listPermissions(string $id): JsonResponse
+    {
+        $role = $this->roles->findById(new RoleId($id));
+        if ($role === null) {
+            return response()->json(["error" => "role_not_found"], 404);
+        }
+        return response()->json(["data" => $role->activePermissionNames()]);
     }
 
     public function store(CreateRoleRequest $request, CreateRoleCommandHandler $handler): JsonResponse

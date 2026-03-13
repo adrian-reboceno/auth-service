@@ -32,7 +32,7 @@ final class UpdateRoleCommandHandler
             }
         }
 
-        $role->rename(RoleName::fromString($command->name));
+        $role->rename(new RoleName($command->name));
         $role->updateDescription($command->description);
 
         $this->roles->save($role);

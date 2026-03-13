@@ -46,7 +46,14 @@ final class EloquentRoleRepository implements RoleRepositoryInterface
         $model->name      = $role->name()->value();
         $model->is_active = $role->isActive();
         $model->is_system = $role->isSystem();
+        $model->description = $role->description();
         $model->save();
+
+        // Sync permissions by name
+        $permissionIds = \App\Models\Permission::whereIn("name",
+            array_map(fn($n) => $n->value(), $role->permissionNames())
+        )->pluck("id")->toArray();
+        $model->permissions()->sync($permissionIds);
 
         foreach ($role->pullDomainEvents() as $event) {
             event($event);
@@ -59,12 +66,12 @@ final class EloquentRoleRepository implements RoleRepositoryInterface
             ->map(fn($p) => new PermissionName($p->name))
             ->toArray();
 
-        return new DomainRole(
+        return (new DomainRole(
             new RoleId($model->id),
             new RoleName($model->name),
             $permissionNames,
             $model->is_active,
             $model->is_system
-        );
+        ))->withDescription($model->description);
     }
 }

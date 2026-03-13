@@ -13,6 +13,7 @@ final class Role
     private array $permissionNames;
     private bool $isActive;
     private bool $isSystem;
+    private ?string $description = null;
     private array $domainEvents = [];
 
     /**
@@ -32,11 +33,34 @@ final class Role
         $this->isSystem       = $isSystem;
     }
 
-    public static function create(RoleId $id, RoleName $name, string $description): self
+    public static function create(RoleId $id, RoleName $name, ?string $description = null, bool $isSystem = false): self
     {
-        $role = new self($id, $name, [], true, false);
+        $role = new self($id, $name, [], true, $isSystem);
+        $role->description = $description;
         $role->recordEvent(new Events\RoleCreated($id, $name));
         return $role;
+    }
+
+
+    public function rename(RoleName $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function withDescription(?string $description): static
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    public function updateDescription(?string $description): void
+    {
+        $this->description = $description;
+    }
+
+    public function description(): ?string
+    {
+        return $this->description;
     }
 
     public function deactivate(): void
