@@ -25,7 +25,7 @@ final class AddPermissionToRoleCommandHandler
             throw new \DomainException('permission_not_found');
         }
 
-        $role->addPermission($permission->id());
+        $role->addPermissionByName($permission->name());
         $this->roles->save($role);
     }
 }

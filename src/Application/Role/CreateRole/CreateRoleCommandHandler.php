@@ -24,7 +24,7 @@ final class CreateRoleCommandHandler
 
         $newRole = Role::create(
             new RoleId((string) Str::uuid()),
-            RoleName::fromString($command->name),
+            new RoleName($command->name),
             $command->description,
             $command->isSystem
         );
