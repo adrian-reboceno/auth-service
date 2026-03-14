@@ -23,6 +23,11 @@ final class EloquentUserRepository implements UserRepositoryInterface
         return $this->toDomain($model);
     }
     
+    public function findAll(): \Illuminate\Support\Collection
+    {
+        return \App\Models\User::all()->map(fn($model) => $this->toDomain($model));
+    }
+
     public function findByEmail(string $email): ?DomainUser
     {
         $model = EloquentUser::where('email', $email)->first();

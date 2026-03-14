@@ -40,7 +40,7 @@ final class AssignRoleToUserCommandHandler
         }
 
         $assignment = UserRoleAssignment::assign(
-            new UserRoleAssignmentId((string) \Illuminate\Support\Str::uuid()),
+            new UserRoleAssignmentId(0),
             $command->targetUserId,
             $command->roleId
         );

@@ -35,6 +35,40 @@ use Carbon\CarbonImmutable;
 
 final class UserController
 {
+
+    public function index(
+        \Domain\User\UserRepositoryInterface $users
+    ): JsonResponse {
+        $all = $users->findAll();
+        $data = $all->map(fn($u) => [
+            "id"        => $u->id()->value(),
+            "full_name" => $u->fullName()->value(),
+            "email"     => $u->email()->value(),
+            "branch_id" => $u->branchId(),
+            "locale"    => $u->locale()->value(),
+            "is_active" => $u->isActive(),
+        ]);
+        return response()->json(["data" => $data]);
+    }
+
+    public function show(
+        string $id,
+        \Domain\User\UserRepositoryInterface $users
+    ): JsonResponse {
+        $user = $users->findById(new UserId($id));
+        if ($user === null) {
+            return response()->json(["error" => "user_not_found"], JsonResponse::HTTP_NOT_FOUND);
+        }
+        return response()->json([
+            "id"        => $user->id()->value(),
+            "full_name" => $user->fullName()->value(),
+            "email"     => $user->email()->value(),
+            "branch_id" => $user->branchId(),
+            "locale"    => $user->locale()->value(),
+            "is_active" => $user->isActive(),
+        ]);
+    }
+
     public function store(
         CreateUserRequest $request,
         CreateUserCommandHandler $handler
@@ -62,21 +96,23 @@ final class UserController
         UpdateUserCommandHandler $handler
     ): JsonResponse {
         try {
+            $userId = new UserId($id);
+            $existing = app(\Domain\User\UserRepositoryInterface::class)->findById($userId);
+            if ($existing === null) {
+                return response()->json(["error" => "user_not_found"], JsonResponse::HTTP_NOT_FOUND);
+            }
             $command = new UpdateUserCommand(
-                new UserId($id),
-                $request->validated('full_name'),
-                $request->validated('email'),
-                $request->validated('locale')
+                $userId,
+                $request->validated("full_name") ?? $existing->fullName()->value(),
+                $request->validated("email")     ?? $existing->email()->value(),
+                $request->validated("locale")    ?? $existing->locale()->value()
             );
-
             $handler->handle($command);
-
-            return response()->json(['message' => 'user_updated']);
+            return response()->json(["message" => "user_updated"]);
         } catch (\DomainException|\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            return response()->json(["error" => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
     }
-
     public function deactivate(
         string $id,
         DeactivateUserCommandHandler $handler
@@ -92,12 +128,13 @@ final class UserController
     }
 
     public function changePassword(
+        string $id,
         ChangePasswordRequest $request,
         ChangePasswordCommandHandler $handler
     ): JsonResponse {
         try {
             // Assuming change password on self
-            $userId = $request->attributes->get('user_id');
+            $userId = $id;
             if (!$userId) throw new \DomainException('unauthorized');
 
             $command = new ChangePasswordCommand(
@@ -127,6 +164,28 @@ final class UserController
             }
             $permissions = $resolver->resolve($userId, $user->isActive());
             return response()->json(["data" => $permissions]);
+        } catch (\DomainException|\InvalidArgumentException $e) {
+            return response()->json(["error" => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
+
+    public function listRoles(
+        string $id,
+        \Domain\UserRoleAssignment\UserRoleAssignmentRepositoryInterface $assignments,
+        \Domain\Role\RoleRepositoryInterface $roles
+    ): JsonResponse {
+        try {
+            $userId = new UserId($id);
+            $userAssignments = $assignments->findByUserId($userId);
+            $roleIds = $userAssignments->map(fn($a) => $a->roleId())->toArray();
+            $userRoles = $roles->findByIds($roleIds);
+            $data = $userRoles->map(fn($r) => [
+                "id"        => $r->id()->value(),
+                "name"      => $r->name()->value(),
+                "is_active" => $r->isActive(),
+            ]);
+            return response()->json(["data" => $data]);
         } catch (\DomainException|\InvalidArgumentException $e) {
             return response()->json(["error" => $e->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
