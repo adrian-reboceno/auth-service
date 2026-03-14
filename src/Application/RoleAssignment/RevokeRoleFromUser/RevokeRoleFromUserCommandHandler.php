@@ -39,7 +39,7 @@ final class RevokeRoleFromUserCommandHandler
         }
 
         $assignment->revoke();
-        $this->roleAssignments->remove($assignment);
+        $this->roleAssignments->delete($assignment);
 
         // Security requirement: revoking a role forces explicit re-auth if they are active sessions
         // ADR-01 short TTL might be sufficient, but immediately revoking session is safer.

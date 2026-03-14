@@ -6,6 +6,9 @@ interface UserRepositoryInterface
 {
     public function findById(UserId $id): ?User;
     
+    /** @return \Illuminate\Support\Collection */
+    public function findAll(): \Illuminate\Support\Collection;
+
     public function findByEmail(string $email): ?User;
     
     public function save(User $user): void;
